@@ -1,5 +1,5 @@
 // Offline support: keeps the app, the cards and the maths renderer on the device.
-const CACHE = 'rl-toolkit-v5';
+const CACHE = 'rl-toolkit-v6';
 const MJ = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js';
 const LOCAL = ['./', './index.html', './cards.json', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 

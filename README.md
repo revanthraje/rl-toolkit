@@ -61,5 +61,5 @@ Deleting the home-screen app deletes its local copy; with sync on, reconnecting 
 
 ## Updating the cards later
 
-Replace `cards.json` in the repository and raise the number in `rl-toolkit-v5` in `sw.js` (to `v6`, and so on).
+Replace `cards.json` in the repository and raise the number in `rl-toolkit-v6` in `sw.js` (to `v7`, and so on).
 The app picks up the new version the next time it is opened online (open it twice).
