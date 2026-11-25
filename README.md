@@ -33,6 +33,7 @@ Open the same link in Safari and choose **File → Add to Dock** (or just bookma
 - **Quiz** tab: multiple-choice questions that check understanding (when a result applies, how to use it, how it
   differs from its neighbours). Each card gets a quiz score, kept separate from the confidence you rate yourself;
   the lowest-scoring cards come first. A card's back also has **Test my understanding** for its own questions.
+- The round button next to the title switches the theme: automatic (follows the device) → light → dark.
 - **New shuffle** orders cards least-confident first (new cards first), shuffling cards of similar confidence.
 - **Order: deck order** turns shuffling off: cards come in book order, and tapping a card on the Deck tab continues
   from there (Next goes to the following card). Tap the pill again for weakest-first. The choice is remembered.
@@ -61,5 +62,5 @@ Deleting the home-screen app deletes its local copy; with sync on, reconnecting 
 
 ## Updating the cards later
 
-Replace `cards.json` in the repository and raise the number in `rl-toolkit-v6` in `sw.js` (to `v7`, and so on).
+Replace `cards.json` in the repository and raise the number in `rl-toolkit-v7` in `sw.js` (to `v8`, and so on).
 The app picks up the new version the next time it is opened online (open it twice).
