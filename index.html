@@ -119,6 +119,27 @@ mjx-container[display=true]{margin:.5em 0!important}
 textarea{width:100%;min-height:90px;font:13px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--soft);color:var(--ink)}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .msg{font-size:13px;color:var(--mute);margin-top:6px;min-height:1em}
+/* quiz */
+.qcard{cursor:default;min-height:0}
+.qstem{font-size:17px;line-height:1.45;margin:12px 0 6px}
+.qstem p{margin:0 0 6px}
+.opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:2px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;margin:7px 0;cursor:pointer;min-height:50px;font-size:15px;line-height:1.4}
+.opt>b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:13px}
+.opt>span{flex:1;padding-top:2px}
+.opt:disabled{cursor:default;color:inherit}
+.opt.ok{border-color:#2e7d32;background:color-mix(in srgb,#2e7d32 12%,var(--card))}.opt.ok>b{background:#2e7d32;color:#fff}
+.opt.bad{border-color:#c62828;background:color-mix(in srgb,#c62828 12%,var(--card))}.opt.bad>b{background:#c62828;color:#fff}
+.opt.dim{opacity:.55}
+.verdict{font-weight:800;font-size:17px;margin:12px 0 2px}.verdict.ok{color:#2e7d32}.verdict.bad{color:#c62828}
+:root[data-theme=dark] .verdict.ok{color:#66bb6a}:root[data-theme=dark] .verdict.bad{color:#ef5350}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .verdict.ok{color:#66bb6a}:root:not([data-theme=light]) .verdict.bad{color:#ef5350}}
+.qabout{font-size:13px;color:var(--mute);margin-top:8px}
+.qnav{display:flex;gap:8px;justify-content:space-between;margin-top:12px;flex-wrap:wrap}
+.qnav .go{width:auto;flex:1;margin:0;padding:0 18px}
+.qline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;font-size:14px;color:var(--mute);margin-top:10px}
+.tq{border:1px solid var(--line);background:var(--soft);border-radius:99px;padding:6px 12px;font-weight:700;cursor:pointer;color:var(--ink)}
+.missed{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.missed button{all:unset;cursor:pointer;border-left:5px solid var(--cc);background:var(--soft);border-radius:8px;padding:8px 10px;font-size:14px}
 .tok{width:100%;margin-top:8px;font:14px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--soft);color:var(--ink)}
 .sheet a{color:var(--sec)}
 .sdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:9px;vertical-align:middle;background:#43a047}
@@ -152,6 +173,10 @@ textarea{width:100%;min-height:90px;font:13px ui-monospace,Menlo,monospace;borde
     <div class="mathwait" id="mathwait"></div>
   </section>
 
+  <section class="view" id="v-quiz" hidden>
+    <div class="card qcard" id="qcard"></div>
+  </section>
+
   <section class="view" id="v-deck" hidden>
     <div class="legend" id="legend"></div>
     <div id="deckList"></div>
@@ -161,6 +186,7 @@ textarea{width:100%;min-height:90px;font:13px ui-monospace,Menlo,monospace;borde
     <div class="stats" id="stats"></div>
     <div class="sheet"><h4>Confidence across the deck</h4><div class="hist" id="hist"></div><div class="legend" id="legend2"></div></div>
     <div class="sheet"><h4>By section (average confidence)</h4><div id="secStats"></div></div>
+    <div class="sheet"><h4>Quiz: understanding (separate from recall confidence)</h4><div class="stats" id="qstats" style="margin-bottom:6px"></div><div id="qsecStats"></div></div>
     <div class="sheet">
       <h4>Sync across devices</h4>
       <div id="syncOff">
@@ -187,6 +213,7 @@ textarea{width:100%;min-height:90px;font:13px ui-monospace,Menlo,monospace;borde
 
 <nav class="tabs" role="tablist">
   <button role="tab" data-v="study" aria-selected="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="15" height="13" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v10"/></svg>Study</button>
+  <button role="tab" data-v="quiz" aria-selected="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.3a2.9 2.9 0 1 1 4.1 2.6c-.8.4-1.3 1-1.3 1.9v.6"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>Quiz</button>
   <button role="tab" data-v="deck" aria-selected="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Deck</button>
   <button role="tab" data-v="prog" aria-selected="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progress</button>
 </nav>
@@ -206,6 +233,13 @@ function load(){try{P=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){P
 function store(){try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}}
 function save(){store();if(window.syncLater)syncLater()} // every local change also queues a sync
 const conf=id=>P[id]?P[id].c:null;
+/* quiz confidence: separate per-card score from multiple-choice answers, {c,n,k,t,h:{qid:[ok,t]}} */
+const QKEY='rlcards-quiz-v1';let Qz={},QZ=null,qlen=10;
+function loadQ(){try{Qz=JSON.parse(localStorage.getItem(QKEY)||'{}')||{}}catch(e){Qz={}}}
+function storeQ(){try{localStorage.setItem(QKEY,JSON.stringify(Qz))}catch(e){}}
+function saveQ(){storeQ();if(window.syncLater)syncLater()}
+const qconf=id=>Qz[id]?Qz[id].c:null;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const cLevel=c=>c==null?0:c<20?1:c<40?2:c<60?3:c<80?4:5;
 const cColor=c=>`var(--c${cLevel(c)})`;
 const cName=c=>c==null?'New':['New','Blank','Shaky','Okay','Good','Mastered'][cLevel(c)];
@@ -245,7 +279,7 @@ function render(anim){
   const x=byId(queue[pos]),s=secOf(x.sec),c=conf(x.id);
   el.style.setProperty('--sec',s.color);
   const meta=`<div class="meta"><span class="chip">${esc(s.title)}</span><span class="tier">${x.n} · ${stars(x.tier)} ${D.tiers[x.tier]}</span></div>`;
-  const meter=`<div class="conf">Confidence <div class="meter"><i style="width:${c??0}%;background:${cColor(c)}"></i></div><b style="color:${cColor(c)}">${c==null?'New':c+'%'}</b></div>`;
+  const meter=`<div class="conf">Confidence <div class="meter"><i style="width:${c??0}%;background:${cColor(c)}"></i></div><b style="color:${cColor(c)}">${c==null?'New':c+'%'}</b></div>`+(x.qz?`<div class="conf">Quiz <div class="meter"><i style="width:${qconf(x.id)??0}%;background:${cColor(qconf(x.id))}"></i></div><b style="color:${cColor(qconf(x.id))}">${qconf(x.id)==null?'Not taken':qconf(x.id)+'%'}</b></div>`:'');
   if(!back){
     el.innerHTML=meta+`<div class="front"><h2>${x.name}</h2><div class="fld">${x.field}</div>${meter}</div><div class="tap">Recall the idea, the statement and its variants, then tap to check</div>`;
   }else{
@@ -253,7 +287,7 @@ function render(anim){
     const rel=x.rel.length?`<div class="lbl">RELATED</div><div class="rel">${x.rel.map(r=>{const y=byId(r);return `<button data-id="${r}">${y.n} ${y.name}</button>`}).join('')}</div>`:'';
     const more=`<details><summary>Proof idea, example &amp; where it is used</summary><div class="lbl">DETAILS &amp; PROOF IDEA</div>${x.det}<div class="lbl">EXAMPLE</div>${x.ex}<div class="lbl">IN RL THEORY</div>${x.use}${x.link?`<div class="lbl">FURTHER READING</div><div class="more"><a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.ll)}</a> (needs internet)</div>`:''}</details>`;
     const rate=`<div class="rate"><div class="ask">How confident are you remembering and using this?</div><div class="row">${RATES.map(([r,l])=>`<button class="rb" data-r="${r}" style="background:var(--c${r})">${r}<small>${l}</small></button>`).join('')}</div></div>`;
-    el.innerHTML=meta+`<div class="back"><h3>${x.name}</h3>${meter}<div class="lbl">IN PLAIN WORDS</div>${x.lay}<div class="lbl">STATEMENT</div><div class="stmt">${x.st}</div>${ver}${rel}${more}</div>${rate}`;
+    el.innerHTML=meta+`<div class="back"><h3>${x.name}</h3>${meter}<div class="lbl">IN PLAIN WORDS</div>${x.lay}<div class="lbl">STATEMENT</div><div class="stmt">${x.st}</div>${ver}${rel}${more}</div>${rate}${x.qz?`<div class="qline"><button class="tq" data-q="${x.id}">Test my understanding (${x.qz.length} questions)</button></div>`:''}`;
   }
   el.classList.remove('out-l','out-r','in');
   if(anim){void el.offsetWidth;el.classList.add('in')}
@@ -290,6 +324,7 @@ function jump(id){ // bring a related card to the front
 }
 $('card').addEventListener('click',e=>{
   if($('card').dataset.swiped)return;
+  const tq=e.target.closest('.tq');if(tq){startQuiz(0,tq.dataset.q);return}
   const rb=e.target.closest('.rb');if(rb){rate(+rb.dataset.r);return}
   const rl=e.target.closest('[data-id]');if(rl){e.preventDefault();jump(rl.dataset.id);return}
   if(e.target.closest('a,details,button,mjx-container'))return;
@@ -297,7 +332,7 @@ $('card').addEventListener('click',e=>{
   flip();
 });
 $('next').onclick=()=>advance(1);$('prev').onclick=()=>advance(-1);
-document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(e.target.tagName)||$('v-study').hidden)return;
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(e.target.tagName)||!$('v-quiz').hidden)return;if($('v-study').hidden)return;
   if(e.key===' '){e.preventDefault();flip()}else if(e.key==='ArrowRight')advance(1);else if(e.key==='ArrowLeft')advance(-1);else if(back&&/^[1-5]$/.test(e.key))rate(+e.key)});
 
 /* filter sheet */
@@ -314,8 +349,9 @@ $('shufBtn').onclick=buildQueue;
 /* tabs */
 document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;
   document.querySelectorAll('.tabs button').forEach(t=>t.setAttribute('aria-selected',t===b));
-  ['study','deck','prog'].forEach(v=>$('v-'+v).hidden=v!==b.dataset.v);
-  if(b.dataset.v==='deck')deck();if(b.dataset.v==='prog')prog();window.scrollTo({top:0})};
+  ['study','quiz','deck','prog'].forEach(v=>$('v-'+v).hidden=v!==b.dataset.v);
+  if(b.dataset.v==='deck')deck();if(b.dataset.v==='prog')prog();if(b.dataset.v==='quiz')qrender();if(b.dataset.v==='study')header();window.scrollTo({top:0})};
+function showTab(v){document.querySelector(`.tabs [data-v=${v}]`).click()}
 function showStudy(){document.querySelector('.tabs [data-v=study]').click()}
 
 /* deck */
@@ -324,10 +360,82 @@ function deck(){
   $('legend').innerHTML=legend()+'<span>Tap a card to study it now</span>';
   $('deckList').innerHTML=D.sections.map(s=>{const cs=D.cards.filter(c=>c.sec===s.key);const rated=cs.filter(c=>conf(c.id)!=null);
     const avg=rated.length?Math.round(rated.reduce((a,c)=>a+conf(c.id),0)/cs.length):0;
-    return `<div class="dsec" style="--c:${s.color}"><h3><b>${esc(s.title)}</b><span>${rated.length}/${cs.length} rated · ${avg}%</span></h3><div class="grid">${cs.map(c=>`<button class="tile" style="--cc:${cColor(conf(c.id))}" data-id="${c.id}"><em>${c.n} · ${cName(conf(c.id))}${conf(c.id)!=null?' '+conf(c.id)+'%':''}</em>${esc(c.plain)}</button>`).join('')}</div></div>`}).join('');
+    return `<div class="dsec" style="--c:${s.color}"><h3><b>${esc(s.title)}</b><span>${rated.length}/${cs.length} rated · ${avg}%</span></h3><div class="grid">${cs.map(c=>`<button class="tile" style="--cc:${cColor(conf(c.id))}" data-id="${c.id}"><em>${c.n} · ${cName(conf(c.id))}${conf(c.id)!=null?' '+conf(c.id)+'%':''}${qconf(c.id)!=null?' · quiz '+qconf(c.id)+'%':''}</em>${esc(c.plain)}</button>`).join('')}</div></div>`}).join('');
 }
-$('deckList').onclick=e=>{const b=e.target.closest('[data-id]');if(!b)return;
-  const id=b.dataset.id,k=queue.indexOf(id);if(k>=0)queue.splice(k,1);if(pos>queue.length)pos=queue.length;queue.splice(pos,0,id);back=false;showStudy();render('in')};
+function openCard(id,showBack){const k=queue.indexOf(id);if(k>=0&&k<pos)pos--;if(k>=0)queue.splice(k,1);if(pos>queue.length)pos=queue.length;queue.splice(pos,0,id);back=!!showBack;showStudy();render('in')}
+$('deckList').onclick=e=>{const b=e.target.closest('[data-id]');if(!b)return;openCard(b.dataset.id,false)};
+
+/* quiz */
+function pickQ(c){ // unseen first, then last answered wrong, then the one answered longest ago
+  const h=(Qz[c.id]||{}).h||{};
+  const rank=q=>{const r=h[q.id];return r==null?0:r[0]===0?1:2+(r[1]||0)/1e14};
+  const rs=c.qz.map((q,i)=>({i,k:rank(q)+Math.random()*1e-3}));rs.sort((a,b)=>a.k-b.k);return rs[0].i;
+}
+function quizPool(){return D.cards.filter(c=>c.qz&&c.qz.length&&(!filt.secs.size||filt.secs.has(c.sec))&&filt.tiers.has(c.tier))}
+function startQuiz(n,cardId){
+  let items;
+  if(cardId){const c=byId(cardId);items=shuffle(c.qz.map((q,i)=>({cid:c.id,qi:i})))}
+  else items=quizPool().map(c=>({c,k:(qconf(c.id)??-20)+Math.random()*15})).sort((a,b)=>a.k-b.k).slice(0,n).map(x=>({cid:x.c.id,qi:pickQ(x.c)}));
+  items.forEach(it=>it.ord=shuffle([0,1,2,3]));
+  QZ={items,pos:0,ans:null,right:0,missed:[],single:cardId||null};
+  showTab('quiz');
+}
+function qhead(){
+  const n=QZ&&QZ.items.length,i=QZ?Math.min(QZ.pos+1,n):0;
+  $('qinfo').innerHTML=QZ&&QZ.pos<n?`Question ${i} of ${n}<br>${QZ.right} correct so far`:'Quiz<br>test your understanding';
+  $('qbar').style.width=(QZ&&n?100*Math.min(QZ.pos+(QZ.ans!=null?1:0),n)/n:0)+'%';
+}
+function qrender(){
+  qhead();const el=$('qcard');el.style.setProperty('--sec','#161a3a');
+  if(!D){el.innerHTML='';return}
+  if(!QZ){
+    const pool=quizPool(),tot=D.cards.filter(c=>c.qz).length;
+    if(!tot){el.innerHTML='<div class="front"><h2>No questions yet</h2></div>';return}
+    const tested=D.cards.filter(c=>c.qz&&qconf(c.id)!=null).length;
+    el.innerHTML=`<div class="back"><h3>Test your understanding</h3><p>Multiple-choice questions on the results: when they apply, how to use them, and how they differ from their neighbours. Each card gets a <b>quiz score</b>, kept separate from the confidence you rate yourself. Cards with the lowest quiz score come first, and within a card you get questions you haven't seen or got wrong.</p>
+      <div class="lbl">HOW MANY QUESTIONS</div><div class="tools">${[5,10,20].map(k=>`<button class="pill${qlen===k?' on':''}" data-len="${k}">${k}</button>`).join('')}</div>
+      <div class="lbl">CARDS</div><p>${esc($('filtBtn').textContent.replace('Filter: ',''))} · ${pool.length} cards with questions · ${tested} of ${tot} quizzed so far <button class="tq" data-fil="1">Change filter</button></p>
+      <button class="go" data-start="1"${pool.length?'':' disabled'}>Start quiz</button></div>`;
+    return;
+  }
+  const n=QZ.items.length;
+  if(QZ.pos>=n){
+    const ms=QZ.missed.map(it=>byId(it.cid));
+    el.innerHTML=`<div class="back"><h3>${QZ.right} of ${n} correct</h3><p>${QZ.right===n?'All right. ':''}Quiz scores are updated; the Deck and Progress tabs show them.</p>
+      ${ms.length?`<div class="lbl">REVISIT</div><div class="missed">${[...new Set(ms)].map(c=>`<button data-open="${c.id}" style="--cc:${secOf(c.sec).color}">${c.n} · ${c.name}</button>`).join('')}</div>`:''}
+      <div class="qnav"><button class="nbtn" data-home="1">Done</button>${QZ.single?'':`<button class="go" data-again="1">Another ${n}</button>`}</div></div>`;
+    typeset(el);return;
+  }
+  const it=QZ.items[QZ.pos],c=byId(it.cid),q=c.qz[it.qi],s=secOf(c.sec),done=QZ.ans!=null,ok=done&&it.ord[QZ.ans]===0;
+  el.style.setProperty('--sec',s.color);
+  const opts=it.ord.map((oi,j)=>{const cls=!done?'':oi===0?' ok':j===QZ.ans?' bad':' dim';
+    const mark=done&&oi===0?'✓':done&&j===QZ.ans?'✗':'ABCD'[j];
+    return `<button class="opt${cls}" data-j="${j}"${done?' disabled':''}><b>${mark}</b><span>${q.a[oi]}</span></button>`}).join('');
+  el.innerHTML=`<div class="meta"><span class="chip">${esc(s.title)}</span><span class="tier">${c.n} · ${stars(c.tier)} ${D.tiers[c.tier]}</span></div>
+    <div class="qstem">${q.q}</div>${opts}
+    ${done?`<div class="verdict ${ok?'ok':'bad'}">${ok?'Correct':'Not quite'}</div><div class="back">${q.why}</div><div class="qabout">About: ${c.name} · quiz score now ${qconf(c.id)}%</div>
+      <div class="qnav"><button class="nbtn" data-open="${c.id}">Open card</button><button class="go" data-next="1">${QZ.pos+1<n?'Next →':'See results'}</button></div>`:''}
+    <div class="qline"><button class="tq" data-end="1">End quiz</button></div>`;
+  typeset(el);
+}
+function qanswer(j){
+  if(!QZ||QZ.ans!=null||QZ.pos>=QZ.items.length)return;
+  const it=QZ.items[QZ.pos],c=byId(it.cid),q=c.qz[it.qi],ok=it.ord[j]===0,o=Qz[c.id]||{},now=Date.now();
+  QZ.ans=j;if(ok)QZ.right++;else QZ.missed.push(it);
+  Qz[c.id]={c:Math.round(.6*(o.c??50)+.4*(ok?100:0)),n:(o.n||0)+1,k:(o.k||0)+(ok?1:0),t:now,h:{...(o.h||{}),[q.id]:[ok?1:0,now]}};
+  saveQ();qrender();
+}
+function qnext(){if(!QZ||QZ.ans==null)return;QZ.pos++;QZ.ans=null;qrender();window.scrollTo({top:0})}
+$('qcard').addEventListener('click',e=>{
+  const xr=e.target.closest('.xr[data-id]');if(xr){e.preventDefault();openCard(xr.dataset.id,true);return}
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.j!=null)qanswer(+d.j);else if(d.next)qnext();else if(d.len){qlen=+d.len;qrender()}
+  else if(d.start)startQuiz(qlen);else if(d.again)startQuiz(QZ.items.length);else if(d.home){QZ=null;qrender()}else if(d.end){if(QZ.pos===0&&QZ.ans==null){QZ=null;qrender()}else{QZ.items=QZ.items.slice(0,QZ.pos+(QZ.ans!=null?1:0));QZ.pos=QZ.items.length;QZ.ans=null;qrender()}}
+  else if(d.open)openCard(d.open,true);else if(d.fil){showStudy();$('filt').hidden=false;chips()}
+});
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(e.target.tagName)||$('v-quiz').hidden||!QZ)return;
+  const k=e.key.toLowerCase(),j='1234'.indexOf(k)>=0?'1234'.indexOf(k):'abcd'.indexOf(k);
+  if(QZ.ans==null&&j>=0)qanswer(j);else if(QZ.ans!=null&&(k==='enter'||k===' '||k==='arrowright')){e.preventDefault();qnext()}});
 
 /* progress */
 function prog(){
@@ -339,15 +447,21 @@ function prog(){
   $('legend2').innerHTML=['New','Blank','Shaky','Okay','Good','Mastered'].map((l,i)=>`<span><i style="background:var(--c${i})"></i>${l} ${cnt[i]}</span>`).join('');
   $('secStats').innerHTML=D.sections.map(s=>{const cs=D.cards.filter(c=>c.sec===s.key);const a=Math.round(cs.reduce((t,c)=>t+(conf(c.id)??0),0)/cs.length);
     return `<div class="srow"><span>${esc(s.title)}</span><div class="bar"><i style="width:${a}%;background:${s.color}"></i></div><span>${a}%</span></div>`}).join('');
+  const qc=D.cards.filter(c=>c.qz),qd=qc.filter(c=>qconf(c.id)!=null),qa=qc.length?Math.round(qc.reduce((t,c)=>t+(qconf(c.id)??0),0)/qc.length):0;
+  const ans=Object.values(Qz).reduce((t,o)=>t+(o.n||0),0),cor=Object.values(Qz).reduce((t,o)=>t+(o.k||0),0);
+  $('qstats').innerHTML=`<div class="stat"><b>${qa}%</b><span>average quiz score</span></div><div class="stat"><b>${qd.length}</b><span>of ${qc.length} quizzed</span></div><div class="stat"><b>${ans?Math.round(100*cor/ans)+'%':'–'}</b><span>${ans} answers correct</span></div>`;
+  $('qsecStats').innerHTML=D.sections.map(s=>{const cs=qc.filter(c=>c.sec===s.key);if(!cs.length)return'';const a=Math.round(cs.reduce((t,c)=>t+(qconf(c.id)??0),0)/cs.length);
+    return `<div class="srow"><span>${esc(s.title)}</span><div class="bar"><i style="width:${a}%;background:${s.color}"></i></div><span>${a}%</span></div>`}).join('');
 }
 const say=t=>{$('msg').textContent=t};
-const dump=()=>JSON.stringify({app:'rl-toolkit',v:1,saved:new Date().toISOString(),progress:P});
+const dump=()=>JSON.stringify({app:'rl-toolkit',v:1,saved:new Date().toISOString(),progress:P,quiz:Qz});
 $('expBtn').onclick=()=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dump()],{type:'application/json'}));a.download='rl-toolkit-progress.json';document.body.appendChild(a);a.click();a.remove();say('Exported rl-toolkit-progress.json')}catch(e){say('Export failed here; use Copy as text instead.')}};
 $('copyBtn').onclick=async()=>{try{await navigator.clipboard.writeText(dump());say('Copied. Paste it into the import box on your other device.')}catch(e){$('impText').value=dump();say('Clipboard unavailable: the text is in the box below, select and copy it.')}};
-function importText(t){try{const o=JSON.parse(t);const p=o.progress||o;let k=0;for(const[id,v]of Object.entries(p)){if(!byId(id)||typeof v.c!=='number')continue;if(!P[id]||(v.t||0)>=(P[id].t||0)){P[id]=v;k++}}save();prog();say(`Imported ${k} cards (newer entries win).`)}catch(e){say('That does not look like exported progress.')}}
+function importText(t){try{const o=JSON.parse(t);const p=o.progress||o;let k=0;for(const[id,v]of Object.entries(p)){if(!byId(id)||typeof v.c!=='number')continue;if(!P[id]||(v.t||0)>=(P[id].t||0)){P[id]=v;k++}}
+  for(const[id,v]of Object.entries(o.quiz||{})){if(!byId(id)||typeof v.c!=='number')continue;if(!Qz[id]||(v.t||0)>=(Qz[id].t||0))Qz[id]=v}storeQ();save();prog();say(`Imported ${k} cards (newer entries win).`)}catch(e){say('That does not look like exported progress.')}}
 $('impBtn').onclick=()=>importText($('impText').value);
 $('impFile').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(importText)};
-$('resetBtn').onclick=()=>{if($('resetBtn').dataset.sure){P={};S.resetAt=Date.now();saveS();save();prog();say('All progress cleared.');delete $('resetBtn').dataset.sure;$('resetBtn').textContent='Reset all progress'}else{$('resetBtn').dataset.sure=1;$('resetBtn').textContent='Tap again to confirm reset'}};
+$('resetBtn').onclick=()=>{if($('resetBtn').dataset.sure){P={};Qz={};storeQ();QZ=null;S.resetAt=Date.now();saveS();save();prog();say('All progress cleared.');delete $('resetBtn').dataset.sure;$('resetBtn').textContent='Reset all progress'}else{$('resetBtn').dataset.sure=1;$('resetBtn').textContent='Tap again to confirm reset'}};
 
 /* sync: progress also lives in one private GitHub gist. Each sync downloads it, merges per card
    (newer rating wins, so ratings made offline on any device are kept), stores the result locally
@@ -382,7 +496,7 @@ async function findGist(){ // the same token on a second device finds the gist t
   for(let p=1;p<=10;p++){const gs=await gh(`/gists?per_page=100&page=${p}`);const g=gs.find(g=>g.files&&g.files[GFILE]);if(g)return g.id;if(gs.length<100)break}
   return null;
 }
-const payload=()=>JSON.stringify({files:{[GFILE]:{content:JSON.stringify({app:'rl-toolkit',v:1,saved:new Date().toISOString(),resetAt:S.resetAt||0,progress:P})}}});
+const payload=()=>JSON.stringify({files:{[GFILE]:{content:JSON.stringify({app:'rl-toolkit',v:1,saved:new Date().toISOString(),resetAt:S.resetAt||0,progress:P,quiz:Qz})}}});
 function syncNow(){
   if(!S.token)return Promise.resolve();
   if(running){again=true;return running}
@@ -399,9 +513,11 @@ function syncNow(){
       const g=await gh('/gists/'+S.gist);
       let R={};try{R=JSON.parse((g.files[GFILE]||{}).content||'{}')||{}}catch(e){}
       const rAt=R.resetAt||0,resetAt=Math.max(S.resetAt||0,rAt);S.resetAt=resetAt;
-      const m=mergeProg(P,R.progress||{},resetAt);
-      if(m.changedLocal){P=m.out;store();refreshViews()}
-      if(m.needPush||resetAt>rAt||!g.files[GFILE])await gh('/gists/'+S.gist,{method:'PATCH',body:payload()});
+      const m=mergeProg(P,R.progress||{},resetAt),mq=mergeProg(Qz,R.quiz||{},resetAt);
+      if(m.changedLocal){P=m.out;store()}
+      if(mq.changedLocal){Qz=mq.out;storeQ()}
+      if(m.changedLocal||mq.changedLocal)refreshViews();
+      if(m.needPush||mq.needPush||resetAt>rAt||!g.files[GFILE])await gh('/gists/'+S.gist,{method:'PATCH',body:payload()});
       S.last=Date.now();state='ok';syncErr='';
     }catch(e){
       S.dirty=true;state='err';
@@ -414,7 +530,7 @@ function syncNow(){
   return running;
 }
 window.syncLater=()=>{if(!S.token)return;S.dirty=true;saveS();syncUI();clearTimeout(tmr);tmr=setTimeout(syncNow,2500)};
-function refreshViews(){if(!$('v-prog').hidden)prog();if(!$('v-deck').hidden)deck();if(D&&!back&&pos<queue.length)render()}
+function refreshViews(){if(!D)return;if(!$('v-prog').hidden)prog();if(!$('v-deck').hidden)deck();if(!$('v-study').hidden&&!back&&pos<queue.length)render();if(!$('v-quiz').hidden&&!QZ)qrender()}
 function ago(t){const s=(Date.now()-t)/1e3;return s<60?'just now':s<3600?Math.round(s/60)+' min ago':s<86400?Math.round(s/3600)+' h ago':'on '+new Date(t).toLocaleDateString()}
 function syncUI(){
   const on=!!S.token,d=$('sdot');
@@ -444,7 +560,7 @@ setInterval(()=>{if(S.token&&document.visibilityState==='visible'){if(S.dirty&&!
 syncUI();
 
 /* boot */
-load();
+load();loadQ();
 fetch('cards.json').then(r=>r.json()).then(d=>{
   D=d;
   let restored=false;

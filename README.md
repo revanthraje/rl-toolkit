@@ -30,6 +30,9 @@ Open the same link in Safari and choose **File → Add to Dock** (or just bookma
 ## Progress
 
 - Rate each card 1–5 after flipping. Confidence is a running average, shown as a percentage.
+- **Quiz** tab: multiple-choice questions that check understanding (when a result applies, how to use it, how it
+  differs from its neighbours). Each card gets a quiz score, kept separate from the confidence you rate yourself;
+  the lowest-scoring cards come first. A card's back also has **Test my understanding** for its own questions.
 - **New shuffle** orders cards least-confident first (new cards first), shuffling cards of similar confidence.
 - Progress is saved on the device and, once sync is set up, kept the same on all your devices.
 - Without sync you can still move it by hand: **Progress → Copy as text** on one device, paste into **Import** on
@@ -56,5 +59,5 @@ Deleting the home-screen app deletes its local copy; with sync on, reconnecting 
 
 ## Updating the cards later
 
-Replace `cards.json` in the repository and raise the number in `rl-toolkit-v2` in `sw.js` (to `v3`, and so on).
+Replace `cards.json` in the repository and raise the number in `rl-toolkit-v3` in `sw.js` (to `v4`, and so on).
 The app picks up the new version the next time it is opened online (open it twice).
