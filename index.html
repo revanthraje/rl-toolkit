@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RL Toolkit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RL Toolkit">
+<meta name="theme-color" content="#161a3a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+/* VOICE everyday study app
+   IDEA a colour-coded deck of index cards; each section has its own ink, confidence runs red to green
+   PICTURE the card itself, large, flipping; a confidence heat-grid of the whole deck on the Deck tab
+   COLOUR deep navy chrome #161a3a, white cards, section colours, five-step confidence scale
+   TYPE system UI (San Francisco on Apple devices, works offline), math in MathJax SVG
+   LAYOUT phone: top bar, card, rating row, bottom tab bar; Mac: same column centred, max 760px */
+:root{color-scheme:light dark;--bg:light-dark(#eef0f7,#0c0e1c);--chrome:#161a3a;--ink:light-dark(#151826,#e8eaf4);--mute:light-dark(#5d6275,#a2a7bb);--card:light-dark(#ffffff,#181c30);--line:light-dark(#dde0ea,#2a2f48);--soft:light-dark(#f4f5fa,#1f2338);--sec:#283593;--c0:#9aa0b4;--c1:#e53935;--c2:#fb8c00;--c3:#f4c20d;--c4:#7cb342;--c5:#1e9e57}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;overflow-x:clip}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--chrome);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 10px) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.topin{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px;justify-content:space-between}
+.top h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.top .q{font-size:13px;opacity:.85;font-variant-numeric:tabular-nums;text-align:right}
+.qbar{height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin-top:8px;max-width:760px;margin-inline:auto;overflow:hidden}
+.qbar i{display:block;height:100%;background:linear-gradient(90deg,var(--c1),var(--c3),var(--c5));width:0;transition:width .3s}
+main{max-width:760px;margin:0 auto;padding:14px max(14px,env(safe-area-inset-left,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-right,0px))}
+.view[hidden]{display:none}
+/* study */
+.tools{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer;min-height:38px}
+.pill.on{background:var(--chrome);color:#fff;border-color:var(--chrome)}
+.stage{position:relative;touch-action:pan-y}
+.card{background:var(--card);border-radius:18px;border-top:8px solid var(--sec);box-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 24px -12px rgba(20,24,60,.35);padding:16px 18px 18px;min-height:min(62vh,520px);display:flex;flex-direction:column;cursor:pointer;transition:transform .25s ease,opacity .25s ease;will-change:transform}
+.card.out-l{transform:translateX(-110%) rotate(-6deg);opacity:0}
+.card.out-r{transform:translateX(110%) rotate(6deg);opacity:0}
+.card.in{animation:pop .25s ease}
+@keyframes pop{from{transform:scale(.96);opacity:.3}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.card{transition:none}.card.in{animation:none}}
+.meta{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--sec) 14%,transparent);color:var(--sec);font-weight:700;border-radius:99px;padding:4px 10px;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:root[data-theme=dark] .chip{color:color-mix(in srgb,var(--sec) 50%,#fff)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .chip{color:color-mix(in srgb,var(--sec) 50%,#fff)}}
+.tier{color:var(--mute);white-space:nowrap}
+.front{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:20px 0}
+.front h2{margin:0;font-size:clamp(26px,7vw,40px);line-height:1.1;font-weight:800;letter-spacing:-.02em}
+.front .fld{color:var(--mute);font-size:16px}
+.conf{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--mute)}
+.meter{flex:1;max-width:220px;height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:4px}
+.tap{color:var(--mute);font-size:14px;text-align:center}
+.back{padding-top:8px}
+.back h3{margin:6px 0 2px;font-size:21px;line-height:1.2;font-weight:800}
+.lbl{font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--sec);margin:14px 0 4px}
+:root[data-theme=dark] .lbl{color:color-mix(in srgb,var(--sec) 45%,#fff)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .lbl{color:color-mix(in srgb,var(--sec) 45%,#fff)}}
+.back p{margin:0 0 6px}
+.stmt{background:color-mix(in srgb,var(--sec) 8%,var(--card));border-left:4px solid var(--sec);border-radius:0 10px 10px 0;padding:8px 12px;overflow-x:auto}
+.back ul{margin:4px 0;padding-left:20px}.back li{margin:6px 0}
+.xr,.rel button{color:var(--sec);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+:root[data-theme=dark] .xr{color:color-mix(in srgb,var(--sec) 45%,#fff)}
+.rel{display:flex;flex-wrap:wrap;gap:6px}
+.rel button{all:unset;cursor:pointer;font-size:14px;border:1px solid var(--line);border-radius:99px;padding:5px 11px;color:var(--ink)}
+details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:700;color:var(--sec);list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ ";}
+details[open] summary::before{content:"▾ "}
+.more a{color:var(--sec)}
+.rate{margin-top:14px}
+.rate .ask{font-size:14px;font-weight:700;margin-bottom:8px;text-align:center}
+.rate .row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.rb{border:0;border-radius:12px;min-height:56px;padding:6px 2px;color:#fff;font-weight:800;font-size:18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.rb small{font-size:11px;font-weight:600;opacity:.95}
+.rb:active{transform:scale(.95)}
+.rb[data-r="3"]{color:#2b2200}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px}
+.nbtn{border:1px solid var(--line);background:var(--card);border-radius:12px;min-height:44px;padding:0 16px;font-weight:700;cursor:pointer}
+.hint{font-size:12px;color:var(--mute);text-align:center}
+.mathwait{font-size:12px;color:var(--mute);text-align:center;margin-top:6px}
+mjx-container{max-width:100%;overflow-x:auto;overflow-y:hidden}
+mjx-container[display=true]{margin:.5em 0!important}
+/* sheet */
+.sheet{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;border:1px solid var(--line)}
+.sheet h4{margin:0 0 8px;font-size:14px}
+.secchips{display:flex;flex-wrap:wrap;gap:6px}
+.sc{border:2px solid var(--c);background:transparent;border-radius:99px;padding:5px 10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink)}
+.sc.on{background:var(--c);color:#fff}
+.go{margin-top:12px;width:100%;min-height:46px;border:0;border-radius:12px;background:var(--chrome);color:#fff;font-weight:800;cursor:pointer}
+/* deck */
+.dsec{margin-bottom:18px}
+.dsec h3{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;font-size:16px;margin:0 0 8px}
+.dsec h3 span{font-size:13px;color:var(--mute);font-weight:600;white-space:nowrap}
+.dsec h3 b{border-left:5px solid var(--c);padding-left:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.tile{all:unset;cursor:pointer;background:var(--card);border-radius:10px;padding:8px 10px;border-left:6px solid var(--cc);font-size:13px;line-height:1.25;display:flex;flex-direction:column;gap:3px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.tile em{font-style:normal;color:var(--mute);font-size:11px;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--mute);margin-bottom:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+/* progress */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.stat{background:var(--card);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--mute)}
+.hist{display:flex;height:22px;border-radius:8px;overflow:hidden;margin:6px 0 14px}
+.hist i{display:block;height:100%}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 120px 40px;gap:10px;align-items:center;font-size:13px;padding:5px 0}
+.srow .bar{height:10px;background:var(--soft);border-radius:5px;overflow:hidden}
+.srow .bar i{display:block;height:100%}
+.srow span:last-child{text-align:right;font-variant-numeric:tabular-nums;color:var(--mute)}
+textarea{width:100%;min-height:90px;font:13px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--soft);color:var(--ink)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.msg{font-size:13px;color:var(--mute);margin-top:6px;min-height:1em}
+.tok{width:100%;margin-top:8px;font:14px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--soft);color:var(--ink)}
+.sheet a{color:var(--sec)}
+.sdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:9px;vertical-align:middle;background:#43a047}
+.sdot[data-s=wait]{background:#fbc02d}.sdot[data-s=err]{background:#e53935}.sdot[data-s=busy]{background:#90a4ff}
+/* tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--chrome);display:flex;justify-content:center;padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.tabs button{flex:1;max-width:180px;border:0;background:transparent;color:rgba(255,255,255,.6);font-size:12px;font-weight:700;padding:6px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabs button b{font-size:20px;line-height:1}
+.tabs button[aria-selected=true]{color:#fff}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="topin"><h1>RL Toolkit<i class="sdot" id="sdot" hidden></i></h1><div class="q" id="qinfo"></div></div>
+  <div class="qbar"><i id="qbar"></i></div>
+</header>
+
+<main>
+  <section class="view" id="v-study">
+    <div class="tools">
+      <button class="pill" id="filtBtn">Filter: All</button>
+      <button class="pill" id="shufBtn">↻ New shuffle</button>
+    </div>
+    <div class="sheet" id="filt" hidden>
+      <h4>Sections</h4><div class="secchips" id="secChips"></div>
+      <h4 style="margin-top:12px">Tiers</h4><div class="secchips" id="tierChips"></div>
+      <button class="go" id="applyF">Shuffle these cards, least confident first</button>
+    </div>
+    <div class="stage" id="stage"><div class="card" id="card"></div></div>
+    <div class="nav"><button class="nbtn" id="prev">← Back</button><span class="hint">Tap to flip · swipe to skip</span><button class="nbtn" id="next">Skip →</button></div>
+    <div class="mathwait" id="mathwait"></div>
+  </section>
+
+  <section class="view" id="v-deck" hidden>
+    <div class="legend" id="legend"></div>
+    <div id="deckList"></div>
+  </section>
+
+  <section class="view" id="v-prog" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="sheet"><h4>Confidence across the deck</h4><div class="hist" id="hist"></div><div class="legend" id="legend2"></div></div>
+    <div class="sheet"><h4>By section (average confidence)</h4><div id="secStats"></div></div>
+    <div class="sheet">
+      <h4>Sync across devices</h4>
+      <div id="syncOff">
+        <div class="hint" style="text-align:left">Keep progress the same on your iPhone and Mac through a private GitHub gist. Create a GitHub token that has only the <b>gist</b> permission (<a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=RL%20Toolkit%20sync" target="_blank" rel="noopener">create one here</a>), then paste the same token on each device. Progress already on a device is merged in, not lost.</div>
+        <input class="tok" id="tokIn" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste token (ghp_…)">
+        <div class="btns"><button class="nbtn" id="connBtn">Connect</button></div>
+      </div>
+      <div id="syncOn" hidden>
+        <div class="hint" style="text-align:left" id="syncStat"></div>
+        <div class="btns"><button class="nbtn" id="syncBtn">Sync now</button><button class="nbtn" id="unsyncBtn">Disconnect this device</button></div>
+      </div>
+      <div class="msg" id="syncMsg"></div>
+    </div>
+    <div class="sheet">
+      <h4>Back up or move your progress</h4>
+      <div class="hint" style="text-align:left">Progress is saved on this device (and synced, if connected above). Export a file here for a backup or to copy progress by hand.</div>
+      <div class="btns"><button class="nbtn" id="expBtn">Export file</button><button class="nbtn" id="copyBtn">Copy as text</button><label class="nbtn" style="display:inline-flex;align-items:center">Import file<input type="file" id="impFile" accept=".json,application/json,text/plain" hidden></label></div>
+      <textarea id="impText" placeholder="…or paste exported progress here"></textarea>
+      <div class="btns"><button class="nbtn" id="impBtn">Import pasted text</button><button class="nbtn" id="resetBtn">Reset all progress</button></div>
+      <div class="msg" id="msg"></div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-v="study" aria-selected="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="15" height="13" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v10"/></svg>Study</button>
+  <button role="tab" data-v="deck" aria-selected="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Deck</button>
+  <button role="tab" data-v="prog" aria-selected="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progress</button>
+</nav>
+
+<script>
+window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'},startup:{typeset:false}};
+</script>
+<script>
+{
+const MJ='https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js';
+const KEY='rlcards-progress-v1',RATES=[[1,'Blank'],[2,'Shaky'],[3,'Okay'],[4,'Good'],[5,'Mastered']];
+const MAP={1:0,2:25,3:50,4:75,5:100};
+let D,P={},queue=[],pos=0,back=false,filt={secs:new Set(),tiers:new Set([1,2,3,4])},mathReady=false,hist=[];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function load(){try{P=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){P={}}}
+function store(){try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}}
+function save(){store();if(window.syncLater)syncLater()} // every local change also queues a sync
+const conf=id=>P[id]?P[id].c:null;
+const cLevel=c=>c==null?0:c<20?1:c<40?2:c<60?3:c<80?4:5;
+const cColor=c=>`var(--c${cLevel(c)})`;
+const cName=c=>c==null?'New':['New','Blank','Shaky','Okay','Good','Mastered'][cLevel(c)];
+const secOf=k=>D.sections.find(s=>s.key===k);
+const byId=id=>D.cards.find(c=>c.id===id);
+const stars=t=>'★'.repeat(5-t);
+
+function buildQueue(){
+  const pool=D.cards.filter(c=>(!filt.secs.size||filt.secs.has(c.sec))&&filt.tiers.has(c.tier));
+  // least confident first; random jitter shuffles cards of similar confidence
+  queue=pool.map(c=>({c,k:(conf(c.id)??-20)+Math.random()*15})).sort((a,b)=>a.k-b.k).map(x=>x.c.id);
+  pos=0;back=false;hist=[];
+  try{sessionStorage.setItem('rlq',JSON.stringify({queue,pos}))}catch(e){}
+  updFiltLabel();render('in');
+}
+function updFiltLabel(){
+  const s=filt.secs.size?`${filt.secs.size} section${filt.secs.size>1?'s':''}`:'All';
+  const t=filt.tiers.size===4?'':' · '+[...filt.tiers].sort().map(x=>D.tiers[x]).join(', ');
+  $('filtBtn').textContent='Filter: '+s+t;
+}
+function header(){
+  const done=Math.min(pos,queue.length);
+  $('qinfo').innerHTML=queue.length?`Card ${Math.min(pos+1,queue.length)} of ${queue.length}<br>least confident first`:'No cards';
+  $('qbar').style.width=(queue.length?100*done/queue.length:0)+'%';
+}
+function typeset(el){if(mathReady){MathJax.typesetClear([el]);MathJax.typesetPromise([el]).catch(()=>{})}}
+
+function render(anim){
+  header();
+  const el=$('card');
+  if(!queue.length){el.innerHTML='<div class="front"><h2>No cards</h2><div class="fld">Change the filter to add some.</div></div>';return}
+  if(pos>=queue.length){
+    el.style.setProperty('--sec','#1e9e57');
+    el.innerHTML=`<div class="front"><h2>Round complete</h2><div class="fld">You went through ${queue.length} cards. Start a new shuffle: cards you rated lowest will come first.</div><button class="go" id="again">New shuffle</button></div>`;
+    $('again').onclick=e=>{e.stopPropagation();buildQueue()};return;
+  }
+  const x=byId(queue[pos]),s=secOf(x.sec),c=conf(x.id);
+  el.style.setProperty('--sec',s.color);
+  const meta=`<div class="meta"><span class="chip">${esc(s.title)}</span><span class="tier">${x.n} · ${stars(x.tier)} ${D.tiers[x.tier]}</span></div>`;
+  const meter=`<div class="conf">Confidence <div class="meter"><i style="width:${c??0}%;background:${cColor(c)}"></i></div><b style="color:${cColor(c)}">${c==null?'New':c+'%'}</b></div>`;
+  if(!back){
+    el.innerHTML=meta+`<div class="front"><h2>${x.name}</h2><div class="fld">${x.field}</div>${meter}</div><div class="tap">Recall the idea, the statement and its variants, then tap to check</div>`;
+  }else{
+    const ver=x.ver.length?`<div class="lbl">VERSIONS &amp; VARIANTS</div><ul>${x.ver.map(v=>`<li>${v}</li>`).join('')}</ul>`:'';
+    const rel=x.rel.length?`<div class="lbl">RELATED</div><div class="rel">${x.rel.map(r=>{const y=byId(r);return `<button data-id="${r}">${y.n} ${y.name}</button>`}).join('')}</div>`:'';
+    const more=`<details><summary>Proof idea, example &amp; where it is used</summary><div class="lbl">DETAILS &amp; PROOF IDEA</div>${x.det}<div class="lbl">EXAMPLE</div>${x.ex}<div class="lbl">IN RL THEORY</div>${x.use}${x.link?`<div class="lbl">FURTHER READING</div><div class="more"><a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.ll)}</a> (needs internet)</div>`:''}</details>`;
+    const rate=`<div class="rate"><div class="ask">How confident are you remembering and using this?</div><div class="row">${RATES.map(([r,l])=>`<button class="rb" data-r="${r}" style="background:var(--c${r})">${r}<small>${l}</small></button>`).join('')}</div></div>`;
+    el.innerHTML=meta+`<div class="back"><h3>${x.name}</h3>${meter}<div class="lbl">IN PLAIN WORDS</div>${x.lay}<div class="lbl">STATEMENT</div><div class="stmt">${x.st}</div>${ver}${rel}${more}</div>${rate}`;
+  }
+  el.classList.remove('out-l','out-r','in');
+  if(anim){void el.offsetWidth;el.classList.add('in')}
+  typeset(el);
+  try{sessionStorage.setItem('rlq',JSON.stringify({queue,pos}))}catch(e){}
+}
+function rate(r){
+  const id=queue[pos];if(!id)return;
+  const o=P[id],v=MAP[r];
+  P[id]={c:o?Math.round(.5*o.c+.5*v):v,n:(o?o.n:0)+1,t:Date.now(),r};
+  save();advance(1);
+}
+function advance(d){
+  const el=$('card');
+  if(d>0&&pos>=queue.length)return;
+  if(d<0&&pos===0)return;
+  el.classList.add(d>0?'out-l':'out-r');
+  setTimeout(()=>{pos+=d;back=false;render('in')},180);
+}
+function flip(){if(pos<queue.length){back=!back;render('in');if(!back)window.scrollTo({top:0})}}
+function jump(id){ // bring a related card to the front
+  const k=queue.indexOf(id);if(k>=0)queue.splice(k,1);
+  queue.splice(pos+1,0,id);advance(1);
+}
+
+/* swipe */
+{
+  let x0=null,y0=0,dx=0;const st=$('stage');
+  st.addEventListener('pointerdown',e=>{if(e.target.closest('button,a,summary,details[open]'))return;x0=e.clientX;y0=e.clientY;dx=0});
+  st.addEventListener('pointermove',e=>{if(x0==null)return;dx=e.clientX-x0;if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(e.clientY-y0)){$('card').style.transform=`translateX(${dx}px) rotate(${dx/40}deg)`;$('card').style.transition='none'}});
+  const end=e=>{if(x0==null)return;const c=$('card');c.style.transition='';c.style.transform='';const moved=Math.abs(dx)>10;
+    if(dx<-70)advance(1);else if(dx>70)advance(-1);x0=null;if(moved){c.dataset.swiped='1';setTimeout(()=>delete c.dataset.swiped,50)}};
+  st.addEventListener('pointerup',end);st.addEventListener('pointercancel',end);
+}
+$('card').addEventListener('click',e=>{
+  if($('card').dataset.swiped)return;
+  const rb=e.target.closest('.rb');if(rb){rate(+rb.dataset.r);return}
+  const rl=e.target.closest('[data-id]');if(rl){e.preventDefault();jump(rl.dataset.id);return}
+  if(e.target.closest('a,details,button,mjx-container'))return;
+  if(window.getSelection&&String(window.getSelection()).length)return;
+  flip();
+});
+$('next').onclick=()=>advance(1);$('prev').onclick=()=>advance(-1);
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(e.target.tagName)||$('v-study').hidden)return;
+  if(e.key===' '){e.preventDefault();flip()}else if(e.key==='ArrowRight')advance(1);else if(e.key==='ArrowLeft')advance(-1);else if(back&&/^[1-5]$/.test(e.key))rate(+e.key)});
+
+/* filter sheet */
+function chips(){
+  $('secChips').innerHTML=D.sections.map(s=>`<button class="sc${filt.secs.has(s.key)?' on':''}" style="--c:${s.color}" data-k="${s.key}">${esc(s.title)}</button>`).join('');
+  $('tierChips').innerHTML=[1,2,3,4].map(t=>`<button class="sc${filt.tiers.has(t)?' on':''}" style="--c:#161a3a" data-t="${t}">${stars(t)} ${D.tiers[t]}</button>`).join('');
+}
+$('filtBtn').onclick=()=>{$('filt').hidden=!$('filt').hidden;chips()};
+$('secChips').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;filt.secs.has(k)?filt.secs.delete(k):filt.secs.add(k);chips()};
+$('tierChips').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;const t=+b.dataset.t;filt.tiers.has(t)?filt.tiers.delete(t):filt.tiers.add(t);if(!filt.tiers.size)filt.tiers.add(t);chips()};
+$('applyF').onclick=()=>{$('filt').hidden=true;buildQueue()};
+$('shufBtn').onclick=buildQueue;
+
+/* tabs */
+document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('.tabs button').forEach(t=>t.setAttribute('aria-selected',t===b));
+  ['study','deck','prog'].forEach(v=>$('v-'+v).hidden=v!==b.dataset.v);
+  if(b.dataset.v==='deck')deck();if(b.dataset.v==='prog')prog();window.scrollTo({top:0})};
+function showStudy(){document.querySelector('.tabs [data-v=study]').click()}
+
+/* deck */
+function legend(){return ['New','Blank','Shaky','Okay','Good','Mastered'].map((n,i)=>`<span><i style="background:var(--c${i})"></i>${n}</span>`).join('')}
+function deck(){
+  $('legend').innerHTML=legend()+'<span>Tap a card to study it now</span>';
+  $('deckList').innerHTML=D.sections.map(s=>{const cs=D.cards.filter(c=>c.sec===s.key);const rated=cs.filter(c=>conf(c.id)!=null);
+    const avg=rated.length?Math.round(rated.reduce((a,c)=>a+conf(c.id),0)/cs.length):0;
+    return `<div class="dsec" style="--c:${s.color}"><h3><b>${esc(s.title)}</b><span>${rated.length}/${cs.length} rated · ${avg}%</span></h3><div class="grid">${cs.map(c=>`<button class="tile" style="--cc:${cColor(conf(c.id))}" data-id="${c.id}"><em>${c.n} · ${cName(conf(c.id))}${conf(c.id)!=null?' '+conf(c.id)+'%':''}</em>${esc(c.plain)}</button>`).join('')}</div></div>`}).join('');
+}
+$('deckList').onclick=e=>{const b=e.target.closest('[data-id]');if(!b)return;
+  const id=b.dataset.id,k=queue.indexOf(id);if(k>=0)queue.splice(k,1);if(pos>queue.length)pos=queue.length;queue.splice(pos,0,id);back=false;showStudy();render('in')};
+
+/* progress */
+function prog(){
+  const n=D.cards.length,rated=D.cards.filter(c=>conf(c.id)!=null),avg=Math.round(D.cards.reduce((a,c)=>a+(conf(c.id)??0),0)/n);
+  const reviews=Object.values(P).reduce((a,p)=>a+(p.n||0),0);
+  $('stats').innerHTML=`<div class="stat"><b>${avg}%</b><span>overall confidence</span></div><div class="stat"><b>${rated.length}</b><span>of ${n} rated</span></div><div class="stat"><b>${reviews}</b><span>reviews</span></div>`;
+  const cnt=[0,0,0,0,0,0];D.cards.forEach(c=>cnt[cLevel(conf(c.id))]++);
+  $('hist').innerHTML=cnt.map((k,i)=>k?`<i title="${k}" style="width:${100*k/n}%;background:var(--c${i})"></i>`:'').join('');
+  $('legend2').innerHTML=['New','Blank','Shaky','Okay','Good','Mastered'].map((l,i)=>`<span><i style="background:var(--c${i})"></i>${l} ${cnt[i]}</span>`).join('');
+  $('secStats').innerHTML=D.sections.map(s=>{const cs=D.cards.filter(c=>c.sec===s.key);const a=Math.round(cs.reduce((t,c)=>t+(conf(c.id)??0),0)/cs.length);
+    return `<div class="srow"><span>${esc(s.title)}</span><div class="bar"><i style="width:${a}%;background:${s.color}"></i></div><span>${a}%</span></div>`}).join('');
+}
+const say=t=>{$('msg').textContent=t};
+const dump=()=>JSON.stringify({app:'rl-toolkit',v:1,saved:new Date().toISOString(),progress:P});
+$('expBtn').onclick=()=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dump()],{type:'application/json'}));a.download='rl-toolkit-progress.json';document.body.appendChild(a);a.click();a.remove();say('Exported rl-toolkit-progress.json')}catch(e){say('Export failed here; use Copy as text instead.')}};
+$('copyBtn').onclick=async()=>{try{await navigator.clipboard.writeText(dump());say('Copied. Paste it into the import box on your other device.')}catch(e){$('impText').value=dump();say('Clipboard unavailable: the text is in the box below, select and copy it.')}};
+function importText(t){try{const o=JSON.parse(t);const p=o.progress||o;let k=0;for(const[id,v]of Object.entries(p)){if(!byId(id)||typeof v.c!=='number')continue;if(!P[id]||(v.t||0)>=(P[id].t||0)){P[id]=v;k++}}save();prog();say(`Imported ${k} cards (newer entries win).`)}catch(e){say('That does not look like exported progress.')}}
+$('impBtn').onclick=()=>importText($('impText').value);
+$('impFile').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(importText)};
+$('resetBtn').onclick=()=>{if($('resetBtn').dataset.sure){P={};S.resetAt=Date.now();saveS();save();prog();say('All progress cleared.');delete $('resetBtn').dataset.sure;$('resetBtn').textContent='Reset all progress'}else{$('resetBtn').dataset.sure=1;$('resetBtn').textContent='Tap again to confirm reset'}};
+
+/* sync: progress also lives in one private GitHub gist. Each sync downloads it, merges per card
+   (newer rating wins, so ratings made offline on any device are kept), stores the result locally
+   and uploads it if the gist was missing anything. A reset is recorded as resetAt: entries rated
+   before it are dropped on every device. */
+const SKEY='rlcards-sync-v1',GFILE='rl-toolkit-progress.json',API='https://api.github.com';
+let S={};try{S=JSON.parse(localStorage.getItem(SKEY)||'{}')||{}}catch(e){S={}}
+function saveS(){try{localStorage.setItem(SKEY,JSON.stringify(S))}catch(e){}}
+let state='',syncErr='',running=null,again=false,tmr=null;
+const same=(a,b)=>a.t===b.t&&a.c===b.c&&a.n===b.n&&a.r===b.r;
+function mergeProg(local,remote,resetAt){
+  const out={},keep=v=>v&&typeof v==='object'&&typeof v.c==='number'&&(v.t||0)>resetAt;
+  let changedLocal=false,needPush=false;
+  for(const id of new Set([...Object.keys(local),...Object.keys(remote)])){
+    const a=keep(local[id])?local[id]:null,b=keep(remote[id])?remote[id]:null;
+    if(local[id]&&!a)changedLocal=true;
+    if(remote[id]&&!b)needPush=true;
+    const w=!a?b:!b?a:((b.t||0)>(a.t||0)?b:a);
+    if(!w)continue;
+    out[id]=w;
+    if(!a||!same(a,w))changedLocal=true;
+    if(!b||!same(b,w))needPush=true;
+  }
+  return {out,changedLocal,needPush};
+}
+async function gh(path,opt={}){
+  const r=await fetch(API+path,{...opt,cache:'no-store',headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+S.token,...(opt.body?{'Content-Type':'application/json'}:{})}});
+  if(!r.ok){const e=new Error('GitHub '+r.status);e.status=r.status;throw e}
+  return r.json();
+}
+async function findGist(){ // the same token on a second device finds the gist the first one made
+  for(let p=1;p<=10;p++){const gs=await gh(`/gists?per_page=100&page=${p}`);const g=gs.find(g=>g.files&&g.files[GFILE]);if(g)return g.id;if(gs.length<100)break}
+  return null;
+}
+const payload=()=>JSON.stringify({files:{[GFILE]:{content:JSON.stringify({app:'rl-toolkit',v:1,saved:new Date().toISOString(),resetAt:S.resetAt||0,progress:P})}}});
+function syncNow(){
+  if(!S.token)return Promise.resolve();
+  if(running){again=true;return running}
+  if(!navigator.onLine){state='offline';syncUI();return Promise.resolve()}
+  $('syncMsg').textContent='';
+  running=(async()=>{
+    S.dirty=false;state='busy';syncUI(); // ratings made during the sync set dirty again
+    try{
+      if(!S.gist){
+        S.gist=await findGist();
+        if(!S.gist)S.gist=(await gh('/gists',{method:'POST',body:JSON.stringify({description:'RL Toolkit flash-card progress (written by the app)',public:false,files:{[GFILE]:{content:'{}'}}})})).id;
+        saveS();
+      }
+      const g=await gh('/gists/'+S.gist);
+      let R={};try{R=JSON.parse((g.files[GFILE]||{}).content||'{}')||{}}catch(e){}
+      const rAt=R.resetAt||0,resetAt=Math.max(S.resetAt||0,rAt);S.resetAt=resetAt;
+      const m=mergeProg(P,R.progress||{},resetAt);
+      if(m.changedLocal){P=m.out;store();refreshViews()}
+      if(m.needPush||resetAt>rAt||!g.files[GFILE])await gh('/gists/'+S.gist,{method:'PATCH',body:payload()});
+      S.last=Date.now();state='ok';syncErr='';
+    }catch(e){
+      S.dirty=true;state='err';
+      if(e.status===401){syncErr='GitHub no longer accepts the token (expired or revoked). Disconnect and paste a new one.'}
+      else if(e.status===404){S.gist=null;syncErr='The sync gist was missing; it will be found or recreated on the next sync.'}
+      else if(e.status===403){syncErr='The token is not allowed to use gists, or GitHub is rate-limiting. Make a token with the gist permission.'}
+      else{syncErr='Could not reach GitHub. Ratings are saved here and will sync later.'}
+    }finally{saveS();running=null;syncUI();if(again){again=false;setTimeout(syncNow,300)}}
+  })();
+  return running;
+}
+window.syncLater=()=>{if(!S.token)return;S.dirty=true;saveS();syncUI();clearTimeout(tmr);tmr=setTimeout(syncNow,2500)};
+function refreshViews(){if(!$('v-prog').hidden)prog();if(!$('v-deck').hidden)deck();if(D&&!back&&pos<queue.length)render()}
+function ago(t){const s=(Date.now()-t)/1e3;return s<60?'just now':s<3600?Math.round(s/60)+' min ago':s<86400?Math.round(s/3600)+' h ago':'on '+new Date(t).toLocaleDateString()}
+function syncUI(){
+  const on=!!S.token,d=$('sdot');
+  $('syncOn').hidden=!on;$('syncOff').hidden=on;d.hidden=!on;
+  if(!on)return;
+  const off=!navigator.onLine||state==='offline';
+  const txt=state==='busy'?'Syncing…':state==='err'?syncErr:off?'Offline. Ratings are saved here and will sync when you are back online.':S.dirty?'Changes waiting to sync.':S.last?`In sync with GitHub (last synced ${ago(S.last)}).`:'Connected.';
+  $('syncStat').textContent=txt;d.title=txt;
+  d.dataset.s=state==='busy'?'busy':state==='err'?'err':(off||S.dirty)?'wait':'ok';
+}
+$('connBtn').onclick=async()=>{
+  const t=$('tokIn').value.trim();
+  if(!/^[A-Za-z0-9_]{20,}$/.test(t)){$('syncMsg').textContent='That does not look like a GitHub token.';return}
+  S={token:t,gist:null,resetAt:S.resetAt||0,dirty:true};saveS();$('tokIn').value='';
+  $('syncMsg').textContent='Connecting…';
+  await syncNow();
+  if(state==='ok')$('syncMsg').textContent='Connected. Progress on this device and on GitHub are now merged.';
+  else if(state==='err'&&!/reach/.test(syncErr)){const bad=/no longer accepts/.test(syncErr);S={resetAt:S.resetAt||0};saveS();state='';syncUI();
+    $('syncMsg').textContent=bad?'GitHub did not accept this token. Check that it was copied in full and has the gist permission.':syncErr}
+  else $('syncMsg').textContent='';
+};
+$('syncBtn').onclick=async()=>{$('syncMsg').textContent='';await syncNow();if(state==='ok')$('syncMsg').textContent='Synced.'};
+$('unsyncBtn').onclick=()=>{S={resetAt:S.resetAt||0};saveS();state='';syncUI();$('syncMsg').textContent='Disconnected. Progress stays on this device and in the gist.'};
+document.addEventListener('visibilitychange',()=>{if(!S.token)return;if(document.visibilityState==='visible')syncNow();else if(S.dirty){clearTimeout(tmr);syncNow()}});
+addEventListener('online',()=>{if(S.token)syncNow()});addEventListener('offline',syncUI);
+setInterval(()=>{if(S.token&&document.visibilityState==='visible'){if(S.dirty&&!running)syncNow();else syncUI()}},60000);
+syncUI();
+
+/* boot */
+load();
+fetch('cards.json').then(r=>r.json()).then(d=>{
+  D=d;
+  let restored=false;
+  try{const s=JSON.parse(sessionStorage.getItem('rlq')||'null');if(s&&s.queue.every(id=>byId(id))){queue=s.queue;pos=s.pos;restored=true}}catch(e){}
+  if(restored){updFiltLabel();render()}else buildQueue();
+  syncNow();
+  $('mathwait').textContent='Loading maths…';
+  const sc=document.createElement('script');sc.src=MJ;sc.async=true;
+  sc.onload=()=>MathJax.startup.promise.then(()=>{mathReady=true;$('mathwait').textContent='';typeset($('card'))});
+  sc.onerror=()=>{$('mathwait').textContent='Maths could not load. Open the app once while online so it can be saved for offline use.'};
+  document.head.appendChild(sc);
+}).catch(()=>{$('card').innerHTML='<div class="front"><h2>Could not load cards</h2></div>'});
+try{if('serviceWorker' in navigator&&location.protocol==='https:'&&!location.hostname.endsWith('claude.ai')&&!location.hostname.endsWith('claudeusercontent.com'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+}
+</script>
+</body>
+</html>
