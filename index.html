@@ -162,6 +162,7 @@ textarea{width:100%;min-height:90px;font:13px ui-monospace,Menlo,monospace;borde
     <div class="tools">
       <button class="pill" id="filtBtn">Filter: All</button>
       <button class="pill" id="shufBtn">↻ New shuffle</button>
+      <button class="pill" id="ordBtn">Order: weakest first</button>
     </div>
     <div class="sheet" id="filt" hidden>
       <h4>Sections</h4><div class="secchips" id="secChips"></div>
@@ -226,6 +227,7 @@ window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg
 const MJ='https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js';
 const KEY='rlcards-progress-v1',RATES=[[1,'Blank'],[2,'Shaky'],[3,'Okay'],[4,'Good'],[5,'Mastered']];
 const MAP={1:0,2:25,3:50,4:75,5:100};
+let ordered=false;try{ordered=localStorage.getItem('rlcards-order')==='deck'}catch(e){}
 let D,P={},queue=[],pos=0,back=false,filt={secs:new Set(),tiers:new Set([1,2,3,4])},mathReady=false,hist=[];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -247,11 +249,12 @@ const secOf=k=>D.sections.find(s=>s.key===k);
 const byId=id=>D.cards.find(c=>c.id===id);
 const stars=t=>'★'.repeat(5-t);
 
-function buildQueue(){
+function buildQueue(startId){
   const pool=D.cards.filter(c=>(!filt.secs.size||filt.secs.has(c.sec))&&filt.tiers.has(c.tier));
   // least confident first; random jitter shuffles cards of similar confidence
-  queue=pool.map(c=>({c,k:(conf(c.id)??-20)+Math.random()*15})).sort((a,b)=>a.k-b.k).map(x=>x.c.id);
-  pos=0;back=false;hist=[];
+  queue=ordered?pool.map(c=>c.id) // deck order: sections in book order, as on the Deck tab
+    :pool.map(c=>({c,k:(conf(c.id)??-20)+Math.random()*15})).sort((a,b)=>a.k-b.k).map(x=>x.c.id);
+  pos=Math.max(0,startId?queue.indexOf(startId):0);back=false;hist=[];
   try{sessionStorage.setItem('rlq',JSON.stringify({queue,pos}))}catch(e){}
   updFiltLabel();render('in');
 }
@@ -259,10 +262,13 @@ function updFiltLabel(){
   const s=filt.secs.size?`${filt.secs.size} section${filt.secs.size>1?'s':''}`:'All';
   const t=filt.tiers.size===4?'':' · '+[...filt.tiers].sort().map(x=>D.tiers[x]).join(', ');
   $('filtBtn').textContent='Filter: '+s+t;
+  $('ordBtn').textContent=ordered?'Order: deck order':'Order: weakest first';$('ordBtn').classList.toggle('on',ordered);
+  $('shufBtn').textContent=ordered?'↺ Back to start':'↻ New shuffle';
+  $('applyF').textContent=ordered?'Show these cards in deck order':'Shuffle these cards, least confident first';
 }
 function header(){
   const done=Math.min(pos,queue.length);
-  $('qinfo').innerHTML=queue.length?`Card ${Math.min(pos+1,queue.length)} of ${queue.length}<br>least confident first`:'No cards';
+  $('qinfo').innerHTML=queue.length?`Card ${Math.min(pos+1,queue.length)} of ${queue.length}<br>${ordered?'in deck order':'least confident first'}`:'No cards';
   $('qbar').style.width=(queue.length?100*done/queue.length:0)+'%';
 }
 function typeset(el){if(mathReady){MathJax.typesetClear([el]);MathJax.typesetPromise([el]).catch(()=>{})}}
@@ -273,7 +279,7 @@ function render(anim){
   if(!queue.length){el.innerHTML='<div class="front"><h2>No cards</h2><div class="fld">Change the filter to add some.</div></div>';return}
   if(pos>=queue.length){
     el.style.setProperty('--sec','#1e9e57');
-    el.innerHTML=`<div class="front"><h2>Round complete</h2><div class="fld">You went through ${queue.length} cards. Start a new shuffle: cards you rated lowest will come first.</div><button class="go" id="again">New shuffle</button></div>`;
+    el.innerHTML=`<div class="front"><h2>Round complete</h2><div class="fld">You went through ${queue.length} cards. ${ordered?'Start again from the first card.':'Start a new shuffle: cards you rated lowest will come first.'}</div><button class="go" id="again">${ordered?'Start again':'New shuffle'}</button></div>`;
     $('again').onclick=e=>{e.stopPropagation();buildQueue()};return;
   }
   const x=byId(queue[pos]),s=secOf(x.sec),c=conf(x.id);
@@ -344,7 +350,9 @@ $('filtBtn').onclick=()=>{$('filt').hidden=!$('filt').hidden;chips()};
 $('secChips').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;filt.secs.has(k)?filt.secs.delete(k):filt.secs.add(k);chips()};
 $('tierChips').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;const t=+b.dataset.t;filt.tiers.has(t)?filt.tiers.delete(t):filt.tiers.add(t);if(!filt.tiers.size)filt.tiers.add(t);chips()};
 $('applyF').onclick=()=>{$('filt').hidden=true;buildQueue()};
-$('shufBtn').onclick=buildQueue;
+$('shufBtn').onclick=()=>buildQueue();
+$('ordBtn').onclick=()=>{ordered=!ordered;try{localStorage.setItem('rlcards-order',ordered?'deck':'shuffle')}catch(e){}
+  const cur=pos<queue.length?queue[pos]:null;buildQueue(ordered?cur:null)}; // deck order continues from the card on screen
 
 /* tabs */
 document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;
@@ -362,7 +370,10 @@ function deck(){
     const avg=rated.length?Math.round(rated.reduce((a,c)=>a+conf(c.id),0)/cs.length):0;
     return `<div class="dsec" style="--c:${s.color}"><h3><b>${esc(s.title)}</b><span>${rated.length}/${cs.length} rated · ${avg}%</span></h3><div class="grid">${cs.map(c=>`<button class="tile" style="--cc:${cColor(conf(c.id))}" data-id="${c.id}"><em>${c.n} · ${cName(conf(c.id))}${conf(c.id)!=null?' '+conf(c.id)+'%':''}${qconf(c.id)!=null?' · quiz '+qconf(c.id)+'%':''}</em>${esc(c.plain)}</button>`).join('')}</div></div>`}).join('');
 }
-function openCard(id,showBack){const k=queue.indexOf(id);if(k>=0&&k<pos)pos--;if(k>=0)queue.splice(k,1);if(pos>queue.length)pos=queue.length;queue.splice(pos,0,id);back=!!showBack;showStudy();render('in')}
+function openCard(id,showBack){
+  if(ordered){const c=byId(id);if((filt.secs.size&&!filt.secs.has(c.sec))||!filt.tiers.has(c.tier)){filt.secs.clear();filt.tiers=new Set([1,2,3,4])}
+    buildQueue(id);back=!!showBack;showStudy();render('in');return} // deck order: Next continues with the following card
+  const k=queue.indexOf(id);if(k>=0&&k<pos)pos--;if(k>=0)queue.splice(k,1);if(pos>queue.length)pos=queue.length;queue.splice(pos,0,id);back=!!showBack;showStudy();render('in')}
 $('deckList').onclick=e=>{const b=e.target.closest('[data-id]');if(!b)return;openCard(b.dataset.id,false)};
 
 /* quiz */

@@ -34,6 +34,8 @@ Open the same link in Safari and choose **File → Add to Dock** (or just bookma
   differs from its neighbours). Each card gets a quiz score, kept separate from the confidence you rate yourself;
   the lowest-scoring cards come first. A card's back also has **Test my understanding** for its own questions.
 - **New shuffle** orders cards least-confident first (new cards first), shuffling cards of similar confidence.
+- **Order: deck order** turns shuffling off: cards come in book order, and tapping a card on the Deck tab continues
+  from there (Next goes to the following card). Tap the pill again for weakest-first. The choice is remembered.
 - Progress is saved on the device and, once sync is set up, kept the same on all your devices.
 - Without sync you can still move it by hand: **Progress → Copy as text** on one device, paste into **Import** on
   the other (newer ratings win). Export a backup occasionally.
@@ -59,5 +61,5 @@ Deleting the home-screen app deletes its local copy; with sync on, reconnecting 
 
 ## Updating the cards later
 
-Replace `cards.json` in the repository and raise the number in `rl-toolkit-v3` in `sw.js` (to `v4`, and so on).
+Replace `cards.json` in the repository and raise the number in `rl-toolkit-v5` in `sw.js` (to `v6`, and so on).
 The app picks up the new version the next time it is opened online (open it twice).
